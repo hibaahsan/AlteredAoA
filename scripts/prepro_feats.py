@@ -39,6 +39,7 @@ import numpy as np
 import torch
 import torchvision.models as models
 import skimage.io
+import sys
 
 from torchvision import transforms as trn
 preprocess = trn.Compose([
@@ -46,6 +47,7 @@ preprocess = trn.Compose([
         trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
+#sys.path.append('D:/Fall20/CS685/AoANet')
 from misc.resnet_utils import myResnet
 import misc.resnet as resnet
 
@@ -83,8 +85,11 @@ def main(params):
     with torch.no_grad():
       tmp_fc, tmp_att = my_resnet(I, params['att_size'])
     # write to pkl
-    np.save(os.path.join(dir_fc, str(img['cocoid'])), tmp_fc.data.cpu().float().numpy())
-    np.savez_compressed(os.path.join(dir_att, str(img['cocoid'])), feat=tmp_att.data.cpu().float().numpy())
+    #np.save(os.path.join(dir_fc, str(img['cocoid'])), tmp_fc.data.cpu().float().numpy())
+    #np.savez_compressed(os.path.join(dir_att, str(img['cocoid'])), feat=tmp_att.data.cpu().float().numpy())
+
+    np.save(os.path.join(dir_fc, str(img['imgid'])), tmp_fc.data.cpu().float().numpy())
+    np.savez_compressed(os.path.join(dir_att, str(img['imgid'])), feat=tmp_att.data.cpu().float().numpy())
 
     if i % 1000 == 0:
       print('processing %d/%d (%.2f%% done)' % (i, N, i*100.0/N))

@@ -75,10 +75,14 @@ def train(opt):
     lr_history = histories.get('lr_history', {})
     ss_prob_history = histories.get('ss_prob_history', {})
 
-    loader.iterators = infos.get('iterators', loader.iterators)
-    loader.split_ix = infos.get('split_ix', loader.split_ix)
+    print("debug pre: ", loader.split_ix['train'][:20])
+    print("infos: ", infos["split_ix"]['train'][:20])
+    #loader.iterators = infos.get('iterators', loader.iterators)
+    #loader.split_ix = infos.get('split_ix', loader.split_ix)
     if opt.load_best_score == 1:
         best_val_score = infos.get('best_val_score', None)
+
+    print("debug post: ", loader.split_ix['train'][:20])
 
     opt.vocab = loader.get_vocab()
     model = models.setup(opt).cuda()
@@ -270,6 +274,6 @@ def train(opt):
         stack_trace = traceback.format_exc()
         print(stack_trace)
 
-
-opt = opts.parse_opt()
-train(opt)
+if __name__ == '__main__':
+    opt = opts.parse_opt()
+    train(opt)
