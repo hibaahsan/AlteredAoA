@@ -8,12 +8,17 @@ import lmdb
 import os
 import numpy as np
 import random
+import h5pickle
 
 import torch
 import torch.utils.data as data
 
 import multiprocessing
 import six
+
+
+def x_first_index(x):
+    return x[0]
 
 class HybridLoader:
     """
@@ -28,6 +33,7 @@ class HybridLoader:
             self.loader = lambda x: np.load(x)
         else:
             self.loader = lambda x: np.load(x)['feat']
+
         if db_path.endswith('.lmdb'):
             self.db_type = 'lmdb'
             self.env = lmdb.open(db_path, subdir=os.path.isdir(db_path),
@@ -98,7 +104,8 @@ class DataLoader(data.Dataset):
         # open the hdf5 file
         print('DataLoader loading h5 file: ', opt.input_fc_dir, opt.input_att_dir, opt.input_box_dir, opt.input_label_h5)
         if self.opt.input_label_h5 != 'none':
-            self.h5_label_file = h5py.File(self.opt.input_label_h5, 'r', driver='core')
+            #self.h5_label_file = h5py.File(self.opt.input_label_h5, 'r', driver='core')
+            self.h5_label_file = h5pickle.File(self.opt.input_label_h5, 'r', driver='core')
             # load in the sequence data
             seq_size = self.h5_label_file['labels'].shape
             self.label = self.h5_label_file['labels'][:]
@@ -121,18 +128,21 @@ class DataLoader(data.Dataset):
         self.split_ix = {'train': [], 'val': [], 'test': []}
         for ix in range(len(self.info['images'])):
             img = self.info['images'][ix]
-            if not 'split' in img:
-                self.split_ix['train'].append(ix)
-                self.split_ix['val'].append(ix)
-                self.split_ix['test'].append(ix)
-            elif img['split'] == 'train':
-                self.split_ix['train'].append(ix)
-            elif img['split'] == 'val':
-                self.split_ix['val'].append(ix)
-            elif img['split'] == 'test':
-                self.split_ix['test'].append(ix)
-            elif opt.train_only == 0: # restval
-                self.split_ix['train'].append(ix)
+            self.split_ix['train'].append(ix)
+            self.split_ix['val'].append(ix)
+            self.split_ix['test'].append(ix)
+            #if not 'split' in img:
+             #   self.split_ix['train'].append(ix)
+              #  self.split_ix['val'].append(ix)
+               # self.split_ix['test'].append(ix)
+            #elif img['split'] == 'train':
+             #   self.split_ix['train'].append(ix)
+            #elif img['split'] == 'val':
+             #   self.split_ix['val'].append(ix)
+            #elif img['split'] == 'test':
+             #   self.split_ix['test'].append(ix)
+            #elif opt.train_only == 0: # restval
+             #   self.split_ix['train'].append(ix)
 
         print('assigned %d images to split train' %len(self.split_ix['train']))
         print('assigned %d images to split val' %len(self.split_ix['val']))
@@ -320,13 +330,15 @@ class BlobFetcher():
         2. wrapped: a new epoch, the split_ix and iterator have been updated in the get_minibatch_inds already.
         """
         # batch_size is 1, the merge is done in DataLoader class
+
         self.split_loader = iter(data.DataLoader(dataset=self.dataloader,
                                             batch_size=1,
                                             sampler=SubsetSampler(self.dataloader.split_ix[self.split][self.dataloader.iterators[self.split]:]),
                                             shuffle=False,
                                             pin_memory=True,
                                             num_workers=4, # 4 is usually enough
-                                            collate_fn=lambda x: x[0]))
+                                            #collate_fn=lambda x: x[0]))
+                                            collate_fn=x_first_index))
 
     def _get_next_minibatch_inds(self):
         max_index = len(self.dataloader.split_ix[self.split])
@@ -355,5 +367,4 @@ class BlobFetcher():
             self.reset()
 
         assert tmp[-1] == ix, "ix not equal"
-
         return tmp + [wrapped]
