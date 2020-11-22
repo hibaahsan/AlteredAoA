@@ -33,6 +33,7 @@ def add_summary_value(writer, key, value, iteration):
         writer.add_scalar(key, value, iteration)
 
 def train(opt):
+    torch.cuda.empty_cache()
     # Deal with feature things before anything
     opt.use_fc, opt.use_att = utils.if_use_feat(opt.caption_model)
     if opt.use_box: opt.att_feat_size = opt.att_feat_size + 5
@@ -75,14 +76,8 @@ def train(opt):
     lr_history = histories.get('lr_history', {})
     ss_prob_history = histories.get('ss_prob_history', {})
 
-    print("debug pre: ", loader.split_ix['train'][:20])
-    print("infos: ", infos["split_ix"]['train'][:20])
-    #loader.iterators = infos.get('iterators', loader.iterators)
-    #loader.split_ix = infos.get('split_ix', loader.split_ix)
     if opt.load_best_score == 1:
         best_val_score = infos.get('best_val_score', None)
-
-    print("debug post: ", loader.split_ix['train'][:20])
 
     opt.vocab = loader.get_vocab()
     model = models.setup(opt).cuda()
@@ -267,7 +262,7 @@ def train(opt):
             # Stop if reaching max epochs
             if epoch >= opt.max_epochs and opt.max_epochs != -1:
                 break
-    except (RuntimeError, KeyboardInterrupt):
+    except (SyntaxError, RuntimeError, KeyboardInterrupt, ModuleNotFoundError):
         print('Save ckpt on exception ...')
         save_checkpoint(model, infos, optimizer)
         print('Save ckpt done.')
