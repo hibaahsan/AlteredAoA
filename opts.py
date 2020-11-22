@@ -9,6 +9,8 @@ def parse_opt():
                     help='path to the directory containing the preprocessed fc feats')
     parser.add_argument('--input_att_dir', type=str, default='data/cocotalk_att',
                     help='path to the directory containing the preprocessed att feats')
+    parser.add_argument('--input_text_dir', type=str, default='data/cocotalk_text',
+                        help='path to the directory containing the preprocessed text feats')
     parser.add_argument('--input_box_dir', type=str, default='data/cocotalk_box',
                     help='path to the directory containing the boxes of att feats')
     parser.add_argument('--input_label_h5', type=str, default='data/coco_label.h5',
@@ -22,6 +24,8 @@ def parse_opt():
                     """)
     parser.add_argument('--cached_tokens', type=str, default='coco-train-idxs',
                     help='Cached token file for calculating cider score during self critical training.')
+    parser.add_argument('--no_text_ids', type=str,
+                        help='Image IDs that do not have text')
 
     # Model settings
     parser.add_argument('--caption_model', type=str, default="show_tell",
@@ -81,6 +85,8 @@ def parse_opt():
                     help='If normalize attention features')
     parser.add_argument('--use_box', type=int, default=0,
                     help='If use box features')
+    parser.add_argument('--use_text', type=int, default=0,
+                        help='If use text features')
     parser.add_argument('--norm_box_feat', type=int, default=0,
                     help='If use box, do we normalize box feature')
 

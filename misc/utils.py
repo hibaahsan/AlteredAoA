@@ -141,6 +141,10 @@ class LabelSmoothing(nn.Module):
         # true_dist[:, self.padding_idx] = 0
         # mask = torch.nonzero(target.data == self.padding_idx)
         # self.true_dist = true_dist
+        #print("Input: ", input)
+        #print("Target: ", target)
+        #print("True_Dist: ", true_dist)
+        #print("Mask Sum: ", mask.sum())
         return (self.criterion(input, true_dist).sum(1) * mask).sum() / mask.sum()
 
 def set_lr(optimizer, lr):
