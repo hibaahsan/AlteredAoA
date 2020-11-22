@@ -24,10 +24,7 @@ csv.field_size_limit(sys.maxsize)
 
 
 FIELDNAMES = ['image_id', 'image_w','image_h','num_boxes', 'boxes', 'features']
-infiles = ['trainval/karpathy_test_resnet101_faster_rcnn_genome.tsv',
-          'trainval/karpathy_val_resnet101_faster_rcnn_genome.tsv',\
-          'trainval/karpathy_train_resnet101_faster_rcnn_genome.tsv.0', \
-           'trainval/karpathy_train_resnet101_faster_rcnn_genome.tsv.1']
+infiles = ['vizwiz_resnet101_faster_rcnn.tsv.0']
 
 os.makedirs(args.output_dir+'_att')
 os.makedirs(args.output_dir+'_fc')
@@ -35,7 +32,7 @@ os.makedirs(args.output_dir+'_box')
 
 for infile in infiles:
     print('Reading ' + infile)
-    with open(os.path.join(args.downloaded_feats, infile), "r+b") as tsv_in_file:
+    with open(os.path.join(args.downloaded_feats, infile), "r") as tsv_in_file:
         reader = csv.DictReader(tsv_in_file, delimiter='\t', fieldnames = FIELDNAMES)
         for item in reader:
             item['image_id'] = int(item['image_id'])

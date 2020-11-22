@@ -145,7 +145,8 @@ def main(params):
     imgs = imgs['images']
 
     #append ViZWiz dataset
-    vizwiz_imgs = json.load(open("D:/Fall20/CS685/AoANet/data/vizwiz_train_data_sample.txt", 'r'))
+    #vizwiz_imgs = json.load(open("D:/Fall20/CS685/AoANet/data/vizwiz_train_data_sample.txt", 'r'))
+    vizwiz_imgs = json.load(open(params['vizwiz_json'], 'r'))
     vizwiz_imgs = vizwiz_imgs['images']
 
     seed(123)  # make reproducible
@@ -199,6 +200,7 @@ if __name__ == "__main__":
 
     # input json
     parser.add_argument('--input_json', required=True, help='input json file to process into hdf5')
+    parser.add_argument('--vizwiz_json', required=True, help='vizwiz json file')
     parser.add_argument('--output_json', default='data.json', help='output json file')
     parser.add_argument('--output_h5', default='data', help='output h5 file')
     parser.add_argument('--images_root', default='',
