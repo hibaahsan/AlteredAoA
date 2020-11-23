@@ -28,11 +28,11 @@ def count_bad(sen):
 def language_eval(dataset, preds, model_id, split):
     import sys
     sys.path.append("coco-caption")
-    #if 'coco' in dataset:
-     #   annFile = 'coco-caption/annotations/captions_val2014.json'
-    #elif 'flickr30k' in dataset or 'f30k' in dataset:
-     #   annFile = 'coco-caption/f30k_captions4eval.json'
-    if 'vizwiz' in dataset:
+    if 'coco' in dataset:
+        annFile = 'coco-caption/annotations/captions_val2014.json'
+    elif 'flickr30k' in dataset or 'f30k' in dataset:
+        annFile = 'coco-caption/f30k_captions4eval.json'
+    elif 'vizwiz' in dataset:
         annFile = 'coco-caption/annotations/val.json'
     from pycocotools.coco import COCO
     from pycocoevalcap.eval import COCOEvalCap
@@ -124,7 +124,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
         # Print beam search
         if beam_size > 1 and verbose_beam:
             for i in range(loader.batch_size):
-                print('\n'.join([utils.decode_sequence(loader.get_vocab(), _['seq'].unsqueeze(0))[0] for _ in model.done_beams[i]]))
+                print('\n'.join([utils.decode_sequence(loader.get_vocab(), _['seq'].unsqueeze(0))[0] for _ in model.module.done_beams[i]]))
                 print('--' * 10)
         sents = utils.decode_sequence(loader.get_vocab(), seq)
 
