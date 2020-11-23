@@ -31,13 +31,13 @@ import os
 import json
 import argparse
 from random import shuffle, seed
-import string
+# import string
 # non-standard dependencies:
 import h5py
 import numpy as np
 import torch
 import torchvision.models as models
-import skimage.io
+# import skimage.io
 from PIL import Image
 
 
