@@ -95,6 +95,9 @@ class DataLoader(data.Dataset):
         self.norm_att_feat = getattr(opt, 'norm_att_feat', 0)
         self.norm_box_feat = getattr(opt, 'norm_box_feat', 0)
 
+        if self.use_text:
+            print('Using text features!')
+
         # load the json file which contains additional information about the dataset
         print('DataLoader loading json file: ', opt.input_json)
         self.info = json.load(open(self.opt.input_json))
@@ -237,8 +240,12 @@ class DataLoader(data.Dataset):
         data = {}
         data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in fc_batch], []))
         # merge att_feats
-        #max_att_len = max([a.shape[0] + t.shape[0] for a,t in zip(att_batch, text_batch)])
-        max_att_len = max([_.shape[0] for _ in att_batch])
+        if self.use_text:
+            max_att_len = max([a.shape[0] + t.shape[0] for a,t in zip(att_batch, text_batch)])
+        else:
+            max_att_len = max([_.shape[0] for _ in att_batch])
+
+        print('Maximum number of features: ', max_att_len)
 
         data['att_feats'] = np.zeros([len(att_batch) * seq_per_img, max_att_len, att_batch[0].shape[1]], dtype='float32')
         for i in range(len(att_batch)):
@@ -256,7 +263,7 @@ class DataLoader(data.Dataset):
                     att_batch[i].shape[0]:att_batch[i].shape[0] + text_batch[i].shape[0], :text_batch[i].shape[1]] = text_batch[i]
 
                     data['att_masks'][i * seq_per_img:(i + 1) * seq_per_img,
-                    att_batch[i].shape[0]:att_batch[i].shape[0] + text_batch[i].shape[0], :text_batch[i].shape[1]] = 1
+                    att_batch[i].shape[0]:att_batch[i].shape[0] + text_batch[i].shape[0]] = 1
 
         # set att_masks to None if attention features have same length
         if data['att_masks'].sum() == data['att_masks'].size:
