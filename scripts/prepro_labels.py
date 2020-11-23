@@ -63,6 +63,12 @@ def build_vocab(imgs, params):
   print('number of words in vocab would be %d' % (len(vocab), ))
   print('number of UNKs: %d/%d = %.2f%%' % (bad_count, total_words, bad_count*100.0/total_words))
 
+  # lets now produce the final annotations
+  if bad_count > 0:
+    # additional special UNK token we will use below to map infrequent words to
+    print('inserting the special UNK token')
+    vocab.append('UNK')
+
   # lets look at the distribution of lengths as well
   sent_lengths = {}
   for img in imgs:
@@ -76,12 +82,6 @@ def build_vocab(imgs, params):
   sum_len = sum(sent_lengths.values())
   for i in range(max_len+1):
     print('%2d: %10d   %f%%' % (i, sent_lengths.get(i,0), sent_lengths.get(i,0)*100.0/sum_len))
-
-  # lets now produce the final annotations
-  if bad_count > 0:
-    # additional special UNK token we will use below to map infrequent words to
-    print('inserting the special UNK token')
-    vocab.append('UNK')
   
   for img in imgs:
     img['final_captions'] = []
@@ -91,6 +91,30 @@ def build_vocab(imgs, params):
       img['final_captions'].append(caption)
 
   return vocab
+
+def extend_vocab(vocab, ocr_json, count_thr=4):
+  # process OCR vocab
+  ocr = json.load(open(ocr_json, 'r'))
+  set_vocab = set(vocab)
+  ocr_counts = {}
+  for img, words in ocr.items():
+    for w in words:
+      w = w.lower()
+      ocr_counts[w] = ocr_counts.get(w, 0) + 1
+  ocr_vocab = [w for w, n in ocr_counts.items() if n > count_thr]
+
+  num_ocr = 0
+  overlap = 0
+  for w in ocr_vocab:
+    if w and not w.isspace() and w not in set_vocab:
+      vocab.append(w)
+      num_ocr += 1
+      print(w)
+    else:
+      overlap += 1
+
+  print('number of OCR words added: ', num_ocr)
+  print('number of overlapping tokens: ', overlap)
 
 def encode_captions(imgs, params, wtoi):
   """ 
@@ -151,6 +175,17 @@ def main(params):
   # encode captions in large arrays, ready to ship to hdf5 file
   L, label_start_ix, label_end_ix, label_length = encode_captions(imgs, params, wtoi)
 
+  #extend vocab using OCR
+  if params['ocr_json'] is not None:
+    extend_vocab(vocab, params['ocr_json'])
+
+  #regenerate indices
+  itow = {i + 1: w for i, w in enumerate(vocab)}  # a 1-indexed vocab translation table
+  wtoi = {w: i + 1 for i, w in enumerate(vocab)}  # inverse table
+
+  print('New vocab size: ', len(vocab))
+
+
   # create output h5 file
   N = len(imgs)
   f_lb = h5py.File(params['output_h5']+'_label.h5', "w")
@@ -196,6 +231,9 @@ if __name__ == "__main__":
   # options
   parser.add_argument('--max_length', default=16, type=int, help='max length of a caption, in number of words. captions longer than this get clipped.')
   parser.add_argument('--word_count_threshold', default=4, type=int, help='only words that occur more than this number of times will be put in vocab')
+
+  #OCR
+  parser.add_argument('--ocr_json', required=False, default=None, help='OCR json')
 
   args = parser.parse_args()
   params = vars(args) # convert to ordinary dict
