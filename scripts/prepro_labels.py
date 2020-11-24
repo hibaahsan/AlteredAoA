@@ -92,24 +92,22 @@ def build_vocab(imgs, params):
 
   return vocab
 
-def extend_vocab(vocab, ocr_json, count_thr=4):
+def extend_vocab(vocab, ocr_json, count_thr=4, max_length=20):
   # process OCR vocab
   ocr = json.load(open(ocr_json, 'r'))
   set_vocab = set(vocab)
   ocr_counts = {}
+  max_words = 0
   for img, words in ocr.items():
-    for w in words:
-      w = w.lower()
+    for w in words[:max_length]:
       ocr_counts[w] = ocr_counts.get(w, 0) + 1
   ocr_vocab = [w for w, n in ocr_counts.items() if n > count_thr]
-
   num_ocr = 0
   overlap = 0
   for w in ocr_vocab:
     if w and not w.isspace() and w not in set_vocab:
       vocab.append(w)
       num_ocr += 1
-      print(w)
     else:
       overlap += 1
 
@@ -184,6 +182,9 @@ def main(params):
   wtoi = {w: i + 1 for i, w in enumerate(vocab)}  # inverse table
 
   print('New vocab size: ', len(vocab))
+  print('Dumping word to index json...')
+  json.dump(wtoi, open(params['wtoi_json'], 'w'))
+
 
 
   # create output h5 file
@@ -234,6 +235,7 @@ if __name__ == "__main__":
 
   #OCR
   parser.add_argument('--ocr_json', required=False, default=None, help='OCR json')
+  parser.add_argument('--wtoi_json', required=False, default=None, help='output word to index file')
 
   args = parser.parse_args()
   params = vars(args) # convert to ordinary dict
