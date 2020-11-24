@@ -257,13 +257,15 @@ class DataLoader(data.Dataset):
 
 
         if self.use_text:
+            max_texts = 20
             for i in range(len(att_batch)):
                 if not np.all(text_batch[i] == np.zeros((1, 1))):
+                    num_texts = min(max_texts, text_batch[i].shape[0])
                     data['att_feats'][i * seq_per_img:(i + 1) * seq_per_img,
-                    att_batch[i].shape[0]:att_batch[i].shape[0] + text_batch[i].shape[0], :text_batch[i].shape[1]] = text_batch[i]
+                    att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts, :text_batch[i].shape[1]] = text_batch[i][:num_texts]
 
                     data['att_masks'][i * seq_per_img:(i + 1) * seq_per_img,
-                    att_batch[i].shape[0]:att_batch[i].shape[0] + text_batch[i].shape[0]] = 1
+                    att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts] = 1
 
         # set att_masks to None if attention features have same length
         if data['att_masks'].sum() == data['att_masks'].size:
