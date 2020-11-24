@@ -239,14 +239,15 @@ class DataLoader(data.Dataset):
         # fc_batch, att_batch, label_batch, gts, infos = \
         #     zip(*sorted(zip(fc_batch, att_batch, np.vsplit(label_batch, batch_size), gts, infos), key=lambda x: len(x[1]), reverse=True))
         fc_batch, att_batch, text_batch, text_ix_batch, label_batch, gts, infos = \
-            zip(*sorted(zip(fc_batch, att_batch, text_batch, label_batch, gts, infos), key=lambda x: 0, reverse=True))
+            zip(*sorted(zip(fc_batch, att_batch, text_batch, text_ix_batch, label_batch, gts, infos), key=lambda x: 0, reverse=True))
         data = {}
         data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in fc_batch], []))
-        # merge att_feats
+
+
+        max_text = 20
+        max_att_len = max([_.shape[0] for _ in att_batch])
         if self.use_text:
-            max_att_len = max([a.shape[0] + t.shape[0] for a,t in zip(att_batch, text_batch)])
-        else:
-            max_att_len = max([_.shape[0] for _ in att_batch])
+            max_att_len = max_att_len + max_text
 
         print('Maximum number of features: ', max_att_len)
 
