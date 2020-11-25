@@ -126,7 +126,7 @@ class DataLoader(data.Dataset):
         self.fc_loader = HybridLoader(self.opt.input_fc_dir, '.npy')
         self.att_loader = HybridLoader(self.opt.input_att_dir, '.npz')
         self.text_loader = HybridLoader(self.opt.input_text_dir, '.npz')
-        self.text_ix_loader = HybridLoader(self.opt.input_vocab_ix_dir, '.npy')
+        self.text_ix_loader = HybridLoader(self.opt.input_text_ix_dir, '.npy')
         self.box_loader = HybridLoader(self.opt.input_box_dir, '.npy')
 
         self.num_images = len(self.info['images'])  # self.label_start_ix.shape[0]
@@ -244,10 +244,10 @@ class DataLoader(data.Dataset):
         data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in fc_batch], []))
 
 
-        max_text = 20
+        max_texts = 20
         max_att_len = max([_.shape[0] for _ in att_batch])
         if self.use_text:
-            max_att_len = max_att_len + max_text
+            max_att_len = max_att_len + max_texts
 
         print('Maximum number of features: ', max_att_len)
 
@@ -259,16 +259,19 @@ class DataLoader(data.Dataset):
         for i in range(len(att_batch)):
             data['att_masks'][i * seq_per_img:(i + 1) * seq_per_img, :(att_batch[i].shape[0])] = 1
 
+        data['text_vocab_ix'] = None
         if self.use_text:
-            max_texts = 20
+            data['text_vocab_ix'] = np.ones((len(att_batch)* seq_per_img, max_texts))*-1
             for i in range(len(att_batch)):
                 if not np.all(text_batch[i] == np.zeros((1, 1))):
-                    num_texts = min(max_texts, text_batch[i].shape[0])
+                    num_texts = min(max_texts, text_ix_batch[i].shape[0])
                     data['att_feats'][i * seq_per_img:(i + 1) * seq_per_img,
                     att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts, :text_batch[i].shape[1]] = text_batch[i][:num_texts]
 
                     data['att_masks'][i * seq_per_img:(i + 1) * seq_per_img,
                     att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts] = 1
+
+                    data['text_vocab_ix'][i * seq_per_img:(i + 1) * seq_per_img, :num_texts] =  text_ix_batch[i][:num_texts]
 
         # set att_masks to None if attention features have same length
         if data['att_masks'].sum() == data['att_masks'].size:
@@ -299,6 +302,7 @@ class DataLoader(data.Dataset):
         """
         ix = index  # self.split_ix[index]
         text_feat = None
+        text_ix = None
         if self.use_att:
             att_feat = self.att_loader.get(str(self.info['images'][ix]['id']))
             if self.use_text:
@@ -307,6 +311,7 @@ class DataLoader(data.Dataset):
                     text_feat = np.zeros((1, 1), dtype='float32')
                 else:
                     text_feat = self.text_loader.get(str(self.info['images'][ix]['id']))
+                    text_ix = self.text_ix_loader.get(str(self.info['images'][ix]['id']))
                 text_feat = text_feat.reshape(-1, text_feat.shape[-1])
 
             # Reshape to K x C
@@ -340,6 +345,7 @@ class DataLoader(data.Dataset):
         return (fc_feat,
                 att_feat,
                 text_feat,
+                text_ix,
                 seq,
                 ix)
 
