@@ -137,6 +137,8 @@ class AoA_Decoder_Core(nn.Module):
         self.att_lstm = nn.LSTMCell(opt.input_encoding_size + opt.rnn_size, opt.rnn_size) # we, fc, h^2_t-1
         self.out_drop = nn.Dropout(self.drop_prob_lm)
 
+        self.attn_weights = None
+
         if self.decoder_type == 'AoA':
             # AoA layer
             self.att2ctx = nn.Sequential(nn.Linear(self.d_model * opt.multi_head_scale + opt.rnn_size, 2 * opt.rnn_size), nn.GLU())
@@ -165,6 +167,7 @@ class AoA_Decoder_Core(nn.Module):
 
         if self.use_multi_head == 2:
             att = self.attention(h_att, p_att_feats.narrow(2, 0, self.multi_head_scale * self.d_model), p_att_feats.narrow(2, self.multi_head_scale * self.d_model, self.multi_head_scale * self.d_model), att_masks)
+            self.attn_weights = self.attention.attn
         else:
             att = self.attention(h_att, att_feats, p_att_feats, att_masks)
 
