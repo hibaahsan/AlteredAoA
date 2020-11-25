@@ -191,6 +191,7 @@ class AttModel(CaptionModel):
                 indices = (self.ocr_vocab_feat_mapping[i][:num_texts]).type(torch.long)
                 weights = self.core.attn_weights.detach()[i]
                 weights = torch.sum(weights[:,:,num_feats-num_texts:num_feats].squeeze(1), 0)
+                weights = F.softmax(weights, dim=0)
                 #print(weights.size())
                 #weights = weights/torch.sum(weights)
                 #print(weights)
