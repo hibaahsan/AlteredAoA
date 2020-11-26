@@ -11,6 +11,8 @@ def parse_opt():
                     help='path to the directory containing the preprocessed att feats')
     parser.add_argument('--input_text_dir', type=str, default='data/cocotalk_text',
                         help='path to the directory containing the preprocessed text feats')
+    parser.add_argument('--input_text_ix_dir', type=str, default='data/cocotalk_text_ix',
+                        help='path to the directory containing the preprocessed text feats')
     parser.add_argument('--input_box_dir', type=str, default='data/cocotalk_box',
                     help='path to the directory containing the boxes of att feats')
     parser.add_argument('--input_label_h5', type=str, default='data/coco_label.h5',
