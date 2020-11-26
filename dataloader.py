@@ -136,21 +136,24 @@ class DataLoader(data.Dataset):
         self.split_ix = {'train': [], 'val': [], 'test': []}
         for ix in range(len(self.info['images'])):
             img = self.info['images'][ix]
-            # self.split_ix['train'].append(ix)
-            # self.split_ix['val'].append(ix)
-            # self.split_ix['test'].append(ix)
-            if not 'split' in img:
-                self.split_ix['train'].append(ix)
-                self.split_ix['val'].append(ix)
-                self.split_ix['test'].append(ix)
-            elif img['split'] == 'train':
-                self.split_ix['train'].append(ix)
-            elif img['split'] == 'val':
-                self.split_ix['val'].append(ix)
-            elif img['split'] == 'test':
-                self.split_ix['test'].append(ix)
-            elif opt.train_only == 0:  # restval
-                self.split_ix['train'].append(ix)
+            if img['id'] == 23652 or img['id'] == 23847:
+                pass
+            else:
+                # self.split_ix['train'].append(ix)
+                # self.split_ix['val'].append(ix)
+                # self.split_ix['test'].append(ix)
+                if not 'split' in img:
+                    self.split_ix['train'].append(ix)
+                    self.split_ix['val'].append(ix)
+                    self.split_ix['test'].append(ix)
+                elif img['split'] == 'train':
+                    self.split_ix['train'].append(ix)
+                elif img['split'] == 'val':
+                    self.split_ix['val'].append(ix)
+                elif img['split'] == 'test':
+                    self.split_ix['test'].append(ix)
+                elif opt.train_only == 0:  # restval
+                    self.split_ix['train'].append(ix)
 
         print('assigned %d images to split train' % len(self.split_ix['train']))
         print('assigned %d images to split val' % len(self.split_ix['val']))
@@ -209,6 +212,8 @@ class DataLoader(data.Dataset):
             # fetch image
             tmp_fc, tmp_att, tmp_text, tmp_text_ix, tmp_seq, \
             ix, tmp_wrapped = self._prefetch_process[split].get()
+           
+          
             if tmp_wrapped:
                 wrapped = True
 
@@ -243,7 +248,6 @@ class DataLoader(data.Dataset):
         data = {}
         data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in fc_batch], []))
 
-
         max_texts = 20
         max_att_len = max([_.shape[0] for _ in att_batch])
         if self.use_text:
@@ -265,6 +269,9 @@ class DataLoader(data.Dataset):
             for i in range(len(att_batch)):
                 if not np.all(text_batch[i] == np.zeros((1, 1))):
                     num_texts = min(max_texts, text_ix_batch[i].shape[0])
+                    # print('Size of data att feats: ', data['att_feats'][i * seq_per_img:(i + 1) * seq_per_img, att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts, :text_batch[i].shape[1]].shape)
+                    # print('Text batch shape: ', text_batch[i].shape)
+                    # print('Total texts + att batch ', att_batch[i].shape[0] + num_texts)
                     data['att_feats'][i * seq_per_img:(i + 1) * seq_per_img,
                     att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts, :text_batch[i].shape[1]] = text_batch[i][:num_texts]
 
@@ -276,6 +283,7 @@ class DataLoader(data.Dataset):
         # set att_masks to None if attention features have same length
         if data['att_masks'].sum() == data['att_masks'].size:
             data['att_masks'] = None
+            print('Att masks are None!')
 
         data['labels'] = np.vstack(label_batch)
         # generate mask

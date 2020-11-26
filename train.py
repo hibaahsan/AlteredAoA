@@ -5,6 +5,7 @@ from __future__ import print_function
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import gc
 
 import numpy as np
 
@@ -33,6 +34,7 @@ def add_summary_value(writer, key, value, iteration):
         writer.add_scalar(key, value, iteration)
 
 def train(opt):
+    gc.collect()
     torch.cuda.empty_cache()
     # Deal with feature things before anything
     opt.use_fc, opt.use_att = utils.if_use_feat(opt.caption_model)
@@ -43,7 +45,7 @@ def train(opt):
     loader = DataLoader(opt)
     opt.vocab_size = loader.vocab_size
     opt.seq_length = loader.seq_length
-    opt.ocr_vocab_size = 1995
+    # opt.ocr_vocab_size = 1995
 
     tb_summary_writer = tb and tb.SummaryWriter(opt.checkpoint_path)
 
@@ -166,9 +168,8 @@ def train(opt):
             tmp = [data['fc_feats'], data['att_feats'], data['labels'], data['masks'], data['att_masks'], data['text_vocab_ix']]
             tmp = [_ if _ is None else _.cuda() for _ in tmp]
             fc_feats, att_feats, labels, masks, att_masks, text_vocab_ix = tmp
-
             model_out = dp_lw_model(fc_feats, att_feats, labels, masks, att_masks, data['gts'], torch.arange(0, len(data['gts'])), sc_flag, text_vocab_ix)
-
+            
             loss = model_out['loss'].mean()
             loss_sp = loss / acc_steps
 
@@ -260,7 +261,9 @@ def train(opt):
 
                 if best_flag:
                     save_checkpoint(model, infos, optimizer, append='best')
-
+            
+            gc.collect()
+            torch.cuda.empty_cache()
             # Stop if reaching max epochs
             if epoch >= opt.max_epochs and opt.max_epochs != -1:
                 break
