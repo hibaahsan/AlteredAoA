@@ -9,6 +9,7 @@ from collections import OrderedDict
 import torch
 
 import sys
+sys.path.append('coco-caption')
 sys.path.append("cider")
 sys.path.append("coco-caption-py3")
 #sys.path.append("D:/Fall20/CS685/cider")

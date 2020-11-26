@@ -114,13 +114,13 @@ class AttModel(CaptionModel):
         # Clip the length of att_masks and att_feats to the maximum length
         if att_masks is not None:
             max_len = att_masks.data.long().sum(1).max()
+            # print(f'Max len in clip att: {max_len}')
             att_feats = att_feats[:, :max_len].contiguous()
             att_masks = att_masks[:, :max_len].contiguous()
         return att_feats, att_masks
 
     def _prepare_feature(self, fc_feats, att_feats, att_masks):
         att_feats, att_masks = self.clip_att(att_feats, att_masks)
-
         # embed fc and att feats
         fc_feats = self.fc_embed(fc_feats)
         att_feats = pack_wrapper(self.att_embed, att_feats, att_masks)
@@ -141,9 +141,12 @@ class AttModel(CaptionModel):
         state = self.init_hidden(batch_size)
 
         outputs = fc_feats.new_zeros(batch_size, seq.size(1) - 1, self.vocab_size + 1)
-
+        
         # Prepare the features
         p_fc_feats, p_att_feats, pp_att_feats, p_att_masks = self._prepare_feature(fc_feats, att_feats, att_masks)
+        # print(f'Post prepping features: {p_att_masks.shape}')
+        # print(f'IN FORWARD att masks {p_att_masks.shape}')
+        # print(f'IN FORWARD ocr vocab mapping {self.ocr_vocab_feat_mapping.shape}')
         # pp_att_feats is used for attention, we cache it in advance to reduce computation cost
 
         for i in range(seq.size(1) - 1):
@@ -183,30 +186,34 @@ class AttModel(CaptionModel):
         copy_probs = torch.ones(probs.size()[0], self.vocab_size + 1).cuda()  # 1 for END token
         copy_probs = copy_probs*(1e-15)
         copy_probs[:, :self.vocab_size + 1 - self.ocr_vocab_size] = p_gen * probs
-
+        # print(f'Consider _sample (second) call: {self.ocr_vocab_feat_mapping.size()}')
+        # print(f'Att Mask : {att_masks.size()}')
         for i in range(self.ocr_vocab_feat_mapping.size()[0]):
             num_texts = torch.sum(self.ocr_vocab_feat_mapping[i] != -1).type(torch.long).item()
             num_feats = torch.sum(att_masks[i]).type(torch.long).item()
-            if num_texts>0:
+            # print(f'num_texts {num_texts}, num_feats {num_feats} at {i}')
+            if num_texts>0 and num_texts < num_feats:
                 indices = (self.ocr_vocab_feat_mapping[i][:num_texts]).type(torch.long)
                 weights = self.core.attn_weights.detach()[i]
+                # print(f'weight tensor {weights.shape}')
                 weights = torch.sum(weights[:,:,num_feats-num_texts:num_feats].squeeze(1), 0)
                 weights = F.softmax(weights, dim=0)
-                #print(weights.size())
+                # print(f'Weights size: {weights.size()}')
+                # print(f'P gen size {p_gen.size()}')
                 #weights = weights/torch.sum(weights)
                 #print(weights)
                 #print(weights)
                 copy_probs[i][indices] += (1 - p_gen)[i] * weights
+
         logprobs = torch.log(copy_probs)
 
         return logprobs, state
 
-    def _sample_beam(self, fc_feats, att_feats, att_masks=None, opt={}):
+    def _sample_beam(self, fc_feats, att_feats, ocr_vocab_feat_mapping=None, att_masks=None, opt={}):
         beam_size = opt.get('beam_size', 10)
         batch_size = fc_feats.size(0)
-
+        # print(f'Batch size: {batch_size}')
         p_fc_feats, p_att_feats, pp_att_feats, p_att_masks = self._prepare_feature(fc_feats, att_feats, att_masks)
-
         assert beam_size <= self.vocab_size + 1, 'lets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt with in future if needed'
         seq = torch.LongTensor(self.seq_length, batch_size).zero_()
         seqLogprobs = torch.FloatTensor(self.seq_length, batch_size)
@@ -218,13 +225,17 @@ class AttModel(CaptionModel):
             tmp_fc_feats = p_fc_feats[k:k + 1].expand(beam_size, p_fc_feats.size(1))
             tmp_att_feats = p_att_feats[k:k + 1].expand(*((beam_size,) + p_att_feats.size()[1:])).contiguous()
             tmp_p_att_feats = pp_att_feats[k:k + 1].expand(*((beam_size,) + pp_att_feats.size()[1:])).contiguous()
+            # print(f'IN SAMPLE BEAM before expand at k = {k} att masks {p_att_masks.shape}')
             tmp_att_masks = p_att_masks[k:k + 1].expand(
                 *((beam_size,) + p_att_masks.size()[1:])).contiguous() if att_masks is not None else None
-
             for t in range(1):
                 if t == 0:  # input <bos>
                     it = fc_feats.new_zeros([beam_size], dtype=torch.long)
 
+                self.ocr_vocab_feat_mapping = ocr_vocab_feat_mapping[k:k+1,:].expand(beam_size, ocr_vocab_feat_mapping.size(1))
+                # print(f'IN SAMPLE BEAM at k = {k} att masks {tmp_att_masks.shape}')
+                # print(f'IN SAMPLE BEAM k = {k} ocr vocab mapping {self.ocr_vocab_feat_mapping.shape}')
+                
                 logprobs, state = self.get_logprobs_state(it, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats,
                                                           tmp_att_masks, state)
 
@@ -235,7 +246,7 @@ class AttModel(CaptionModel):
         # return the samples and their log likelihoods
         return seq.transpose(0, 1), seqLogprobs.transpose(0, 1)
 
-    def _sample(self, fc_feats, att_feats, att_masks=None, opt={}):
+    def _sample(self, fc_feats, att_feats, ocr_vocab_feat_mapping=None, att_masks=None, opt={}):
 
         sample_method = opt.get('sample_method', 'greedy')
         beam_size = opt.get('beam_size', 1)
@@ -244,7 +255,7 @@ class AttModel(CaptionModel):
         block_trigrams = opt.get('block_trigrams', 0)
         remove_bad_endings = opt.get('remove_bad_endings', 0)
         if beam_size > 1:
-            return self._sample_beam(fc_feats, att_feats, att_masks, opt)
+            return self._sample_beam(fc_feats, att_feats, ocr_vocab_feat_mapping, att_masks, opt)
 
         batch_size = fc_feats.size(0)
         state = self.init_hidden(batch_size)
@@ -831,6 +842,7 @@ class NewFCModel(AttModel):
         return self._core(xt, state)
 
     def _prepare_feature(self, fc_feats, att_feats, att_masks):
+        print('IN PREPARE FEATS for NewFCModel!!')
         fc_feats = self.fc_embed(fc_feats)
 
         return fc_feats, None, None, None
@@ -855,6 +867,7 @@ class LMModel(AttModel):
         return self._core(xt, state)
 
     def _prepare_feature(self, fc_feats, att_feats, att_masks):
+        print('IN PREPARE FEATS for LMModel!!')
         fc_feats = self.fc_embed(fc_feats)
 
         return fc_feats, None, None, None

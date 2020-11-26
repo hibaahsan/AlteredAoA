@@ -101,12 +101,13 @@ def eval_split(model, crit, loader, eval_kwargs={}):
 
         if data.get('labels', None) is not None and verbose_loss:
             # forward the model to get loss
-            tmp = [data['fc_feats'], data['att_feats'], data['labels'], data['masks'], data['att_masks']]
+            tmp = [data['fc_feats'], data['att_feats'], data['labels'], data['masks'], data['att_masks'],  data['text_vocab_ix']]
             tmp = [_.cuda() if _ is not None else _ for _ in tmp]
-            fc_feats, att_feats, labels, masks, att_masks = tmp
-
+            fc_feats, att_feats, labels, masks, att_masks, text_vocab_ix = tmp
+            # print(f'In EVAL att masks {att_masks.size()}')
+            # print(f'In EVAL text vocab {text_vocab_ix.size()}')
             with torch.no_grad():
-                loss = crit(model(fc_feats, att_feats, labels, att_masks), labels[:,1:], masks[:,1:]).item()
+                loss = crit(model(fc_feats, att_feats, labels, text_vocab_ix, att_masks), labels[:,1:], masks[:,1:]).item()
             loss_sum = loss_sum + loss
             loss_evals = loss_evals + 1
 
@@ -114,17 +115,25 @@ def eval_split(model, crit, loader, eval_kwargs={}):
         # Only leave one feature for each image, in case duplicate sample
         tmp = [data['fc_feats'][np.arange(loader.batch_size) * loader.seq_per_img], 
             data['att_feats'][np.arange(loader.batch_size) * loader.seq_per_img],
-            data['att_masks'][np.arange(loader.batch_size) * loader.seq_per_img] if data['att_masks'] is not None else None]
+            data['att_masks'][np.arange(loader.batch_size) * loader.seq_per_img] if data['att_masks'] is not None else None,
+            data['text_vocab_ix'][np.arange(loader.batch_size) * loader.seq_per_img]]
         tmp = [_.cuda() if _ is not None else _ for _ in tmp]
-        fc_feats, att_feats, att_masks = tmp
+        fc_feats, att_feats, att_masks, text_vocab_ix = tmp
+
         # forward the model to also get generated samples for each image
         with torch.no_grad():
-            seq = model(fc_feats, att_feats, att_masks, opt=eval_kwargs, mode='sample')[0].data
+            # print(f'In EVAL SAMPLE att masks {att_masks.size()}')
+            # print(f'In EVAL SAMPLE text vocab {text_vocab_ix.size()}')
+            seq = model(fc_feats, att_feats, text_vocab_ix, att_masks, opt=eval_kwargs, mode='sample')[0].data
         
         # Print beam search
         if beam_size > 1 and verbose_beam:
             for i in range(loader.batch_size):
-                print('\n'.join([utils.decode_sequence(loader.get_vocab(), _['seq'].unsqueeze(0))[0] for _ in model.module.done_beams[i]]))
+                try:
+                    print('\n'.join([utils.decode_sequence(loader.get_vocab(), _['seq'].unsqueeze(0))[0] for _ in model.done_beams[i]]))
+                except:
+                    print('\n'.join([utils.decode_sequence(loader.get_vocab(), _['seq'].unsqueeze(0))[0] for _ in model.module.done_beams[i]]))
+
                 print('--' * 10)
         sents = utils.decode_sequence(loader.get_vocab(), seq)
 
