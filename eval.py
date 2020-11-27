@@ -83,4 +83,5 @@ if lang_stats:
 if opt.dump_json == 1:
     # dump the json
     print('Writing results to JSON!')
-    json.dump(split_predictions, open('eval_results_train/vis.json', 'w'), indent=4, sort_keys=True)
+    json.dump(split_predictions, open('eval_results/vis.json', 'w'), indent=4, sort_keys=True)
+
