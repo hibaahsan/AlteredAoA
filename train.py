@@ -266,6 +266,9 @@ def train(opt):
             torch.cuda.empty_cache()
             # Stop if reaching max epochs
             if epoch >= opt.max_epochs and opt.max_epochs != -1:
+                print('Done training. Saving final model ...')
+                save_checkpoint(model, infos, optimizer, histories, append='final')
+                print('Final model saved!.')
                 break
     except (SyntaxError, RuntimeError, KeyboardInterrupt, ModuleNotFoundError):
         print('Save ckpt on exception ...')

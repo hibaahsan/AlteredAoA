@@ -36,7 +36,7 @@ with open(opt.infos_path, 'rb') as f:
     infos = utils.pickle_load(f)
 
 # override and collect parameters
-replace = ['input_fc_dir', 'input_att_dir', 'input_box_dir', 'input_label_h5', 'input_json', 'batch_size', 'id']
+replace = ['input_fc_dir', 'input_att_dir', 'input_box_dir', 'input_label_h5', 'input_json', 'batch_size', 'id', 'input_text_dir']
 ignore = ['start_from']
 
 for k in vars(infos['opt']).keys():
@@ -45,6 +45,7 @@ for k in vars(infos['opt']).keys():
     elif k not in ignore:
         if not k in vars(opt):
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
+
 
 vocab = infos['vocab'] # ix -> word mapping
 
@@ -81,4 +82,5 @@ if lang_stats:
 
 if opt.dump_json == 1:
     # dump the json
-    json.dump(split_predictions, open('eval_results/vis.json', 'w'))
+    print('Writing results to JSON!')
+    json.dump(split_predictions, open('eval_results_train/vis.json', 'w'), indent=4, sort_keys=True)

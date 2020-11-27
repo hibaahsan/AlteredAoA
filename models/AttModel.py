@@ -232,7 +232,7 @@ class AttModel(CaptionModel):
                 if t == 0:  # input <bos>
                     it = fc_feats.new_zeros([beam_size], dtype=torch.long)
 
-                self.ocr_vocab_feat_mapping = ocr_vocab_feat_mapping[k:k+1,:].expand(beam_size, ocr_vocab_feat_mapping.size(1))
+                self.ocr_vocab_feat_mapping = ocr_vocab_feat_mapping[k:k+1].expand(*((beam_size,) + ocr_vocab_feat_mapping.size()[1:])).contiguous()
                 # print(f'IN SAMPLE BEAM at k = {k} att masks {tmp_att_masks.shape}')
                 # print(f'IN SAMPLE BEAM k = {k} ocr vocab mapping {self.ocr_vocab_feat_mapping.shape}')
                 
@@ -243,6 +243,7 @@ class AttModel(CaptionModel):
                                                   tmp_att_masks, opt=opt)
             seq[:, k] = self.done_beams[k][0]['seq']  # the first beam has highest cumulative score
             seqLogprobs[:, k] = self.done_beams[k][0]['logps']
+       
         # return the samples and their log likelihoods
         return seq.transpose(0, 1), seqLogprobs.transpose(0, 1)
 
