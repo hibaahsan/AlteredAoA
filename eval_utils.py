@@ -67,7 +67,7 @@ def language_eval(dataset, preds, model_id, split):
         imgToEval[image_id]['caption'] = caption
     
     out['bad_count_rate'] = sum([count_bad(_['caption']) for _ in preds_filt]) / float(len(preds_filt))
-    outfile_path = os.path.join('eval_results_train/', model_id + '_' + split + '.json')
+    outfile_path = os.path.join('eval_results/', model_id + '_' + split + '.json')
     with open(outfile_path, 'w') as outfile:
         json.dump({'overall': out, 'imgToEval': imgToEval}, outfile, indent=4)
 
