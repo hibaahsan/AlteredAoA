@@ -46,8 +46,10 @@ for k in vars(infos['opt']).keys():
         if not k in vars(opt):
             vars(opt).update({k: vars(infos['opt'])[k]}) # copy over options from model
 
+
 if 'ocr_vocab_size' not in vars(opt):
     setattr(opt, 'ocr_vocab_size', 1995)
+
 
 vocab = infos['vocab'] # ix -> word mapping
 
