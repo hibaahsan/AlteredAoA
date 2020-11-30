@@ -275,3 +275,6 @@ def add_eval_options(parser):
                     help='if we need to print out all beam search beams.')
     parser.add_argument('--verbose_loss', type=int, default=0, 
                     help='If calculate loss using ground truth during evaluation')
+
+    parser.add_argument('--no_text_ids', type=str,
+                    help='Image IDs that do not have text')
