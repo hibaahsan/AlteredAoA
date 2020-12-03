@@ -504,7 +504,7 @@ class TopDownCore(nn.Module):
         super(TopDownCore, self).__init__()
         self.drop_prob_lm = opt.drop_prob_lm
 
-        self.att_lstm = nn.LSTMCell(opt.input_encoding_size + opt.rnn_size * 2 + 768, opt.rnn_size)  # we, fc, h^2_t-1
+        self.att_lstm = nn.LSTMCell(opt.input_encoding_size + opt.rnn_size * 2, opt.rnn_size)  # we, fc, h^2_t-1
         self.lang_lstm = nn.LSTMCell(opt.rnn_size * 2, opt.rnn_size)  # h^1_t, \hat v
         self.attention = Attention(opt)
         
