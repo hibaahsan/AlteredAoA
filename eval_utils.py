@@ -104,8 +104,6 @@ def eval_split(model, crit, loader, eval_kwargs={}):
             tmp = [data['fc_feats'], data['att_feats'], data['labels'], data['masks'], data['att_masks'],  data['text_vocab_ix']]
             tmp = [_.cuda() if _ is not None else _ for _ in tmp]
             fc_feats, att_feats, labels, masks, att_masks, text_vocab_ix = tmp
-            # print(f'In EVAL att masks {att_masks.size()}')
-            # print(f'In EVAL text vocab {text_vocab_ix.size()}')
             with torch.no_grad():
                 loss = crit(model(fc_feats, att_feats, labels, text_vocab_ix, att_masks), labels[:,1:], masks[:,1:]).item()
             loss_sum = loss_sum + loss
@@ -122,8 +120,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
 
         # forward the model to also get generated samples for each image
         with torch.no_grad():
-            # print(f'In EVAL SAMPLE att masks {att_masks.size()}')
-            # print(f'In EVAL SAMPLE text vocab {text_vocab_ix.size()}')
+
             seq = model(fc_feats, att_feats, text_vocab_ix, att_masks, opt=eval_kwargs, mode='sample')[0].data
         
         # Print beam search

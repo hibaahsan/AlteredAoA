@@ -1,15 +1,14 @@
-id="aoanet"
+id="td"
 if [ ! -f log/log_$id/infos_$id.pkl ]; then
 start_from=""
 else
 start_from="--start_from log/log_$id"
 fi
 python train.py --id $id \
-    --caption_model aoa \
+    --caption_model topdown \
     --refine 1 \
     --refine_aoa 1 \
     --use_ff 0 \
-    -- use_text 1 \
     --decoder_type AoA \
     --use_multi_head 2 \
     --num_heads 8 \
@@ -37,7 +36,7 @@ python train.py --id $id \
     --scheduled_sampling_start 0 \
     --checkpoint_path log/log_$id  \
     $start_from \
-    --save_checkpoint_every 5000 \
+    --save_checkpoint_every 1000 \
     --language_eval 1 \
     --val_images_use -1 \
     --max_epochs 20 \

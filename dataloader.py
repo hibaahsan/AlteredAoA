@@ -286,9 +286,6 @@ class DataLoader(data.Dataset):
             for i in range(len(att_batch)):
                 if not np.all(text_batch[i] == np.zeros((1, 1))):
                     num_texts = min(max_texts, text_ix_batch[i].shape[0])
-                    # print('Size of data att feats: ', data['att_feats'][i * seq_per_img:(i + 1) * seq_per_img, att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts, :text_batch[i].shape[1]].shape)
-                    # print('Text batch shape: ', text_batch[i].shape)
-                    # print('Total texts + att batch ', att_batch[i].shape[0] + num_texts)
                     data['att_feats'][i * seq_per_img:(i + 1) * seq_per_img,
                     att_batch[i].shape[0]:att_batch[i].shape[0] + num_texts, :text_batch[i].shape[1]] = text_batch[i][:num_texts]
 
