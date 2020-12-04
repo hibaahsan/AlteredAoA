@@ -249,9 +249,26 @@ class DataLoader(data.Dataset):
         data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in fc_batch], []))
 
         max_texts = 20
-        max_att_len = max([_.shape[0] for _ in att_batch])
+        max_att_len = max([_.shape[0] for _ in att_batch])  
+        # merge att_feats
         if self.use_text:
             max_att_len = max_att_len + max_texts
+
+        if self.use_text:
+            new_text_batch = []
+            # avg_text = np.mean(text_batch, axis = 1, dtype='float32')
+            for i,_ in enumerate(fc_batch):
+                if not np.all(text_batch[i] == np.zeros((1, 1))):
+                    num_texts = min(max_texts, text_batch[i].shape[0])
+                    avg_text = np.mean(text_batch[i][:num_texts], axis = 0, dtype='float32')
+                else:
+                    avg_text = np.zeros((768,), dtype='float32')
+                new_text_batch.append(avg_text)
+            new_fc_batch = np.concatenate((fc_batch, new_text_batch), axis = 1) 
+
+            data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in new_fc_batch], []))
+        else:
+            data['fc_feats'] = np.stack(sum([[_] * seq_per_img for _ in fc_batch], []))
 
         print('Maximum number of features: ', max_att_len)
 

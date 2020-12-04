@@ -11,8 +11,8 @@ def parse_opt():
                     help='path to the directory containing the preprocessed att feats')
     parser.add_argument('--input_text_dir', type=str, default='data/cocotalk_text',
                         help='path to the directory containing the preprocessed text feats')
-    parser.add_argument('--input_text_ix_dir', type=str, default='data/cocotalk_text_ix',
-                        help='path to the directory containing the preprocessed text feats')
+    parser.add_argument('--input_text_ix_dir', type=str, default='',
+                        help='path to the directory containing the vocab indices of OCR tokens')
     parser.add_argument('--input_box_dir', type=str, default='data/cocotalk_box',
                     help='path to the directory containing the boxes of att feats')
     parser.add_argument('--input_label_h5', type=str, default='data/coco_label.h5',
@@ -42,8 +42,8 @@ def parse_opt():
                     help='the encoding size of each token in the vocabulary, and the image.')
     parser.add_argument('--att_hid_size', type=int, default=512,
                     help='the hidden size of the attention MLP; only useful in show_attend_tell; 0 if not using hidden layer')
-    parser.add_argument('--fc_feat_size', type=int, default=2048,
-                    help='2048 for resnet, 4096 for vgg')
+    parser.add_argument('--fc_feat_size', type=int, default=2816,
+                    help='2048 for resnet, 4096 for vgg, 2816 for text feat')
     parser.add_argument('--att_feat_size', type=int, default=2048,
                     help='2048 for resnet, 512 for vgg')
     parser.add_argument('--logit_layers', type=int, default=1,
@@ -246,6 +246,7 @@ def add_eval_options(parser):
     
     parser.add_argument('--use_text', type=int, default=0,
                     help='Use text or not')
+
     # For evaluation on a folder of images:
     parser.add_argument('--image_folder', type=str, default='', 
                     help='If this is nonempty then will predict on the images in this folder path')
@@ -275,3 +276,10 @@ def add_eval_options(parser):
                     help='if we need to print out all beam search beams.')
     parser.add_argument('--verbose_loss', type=int, default=0, 
                     help='If calculate loss using ground truth during evaluation')
+
+    parser.add_argument('--no_text_ids', type=str,
+                    help='Image IDs that do not have text')
+    parser.add_argument('--ocr_vocab_size', type=int, default=1995,
+                    help='total ocr tokens detected')
+    parser.add_argument('--input_text_ix_dir', type=str, default='',
+                        help='path to the directory containing the vocab indices of OCR tokens')
